@@ -88,9 +88,6 @@ def _parse_non_negative_int(value: Any, field_name: str) -> int:
     return parsed
 
 
-REDEMPTION_COFFEE_ID = "00000000-0000-0000-0000-000000000000"
-
-
 class CreateCoffeeRequest(BaseModel):
     name: str = Field(min_length=1)
     price: int
@@ -279,10 +276,6 @@ def redeem(memberId: str, req: RedeemRequest) -> RedeemResponse:
             remaining_points = current_points - points_to_use
 
             cur.execute('UPDATE member SET points = %s WHERE "memberId" = %s;', (remaining_points, member_id))
-            cur.execute(
-                'INSERT INTO redeem_history (member_id, coffee_id, points_redeemed) VALUES (%s, %s, %s);',
-                (member_id, REDEMPTION_COFFEE_ID, points_to_use),
-            )
             conn.commit()
             return RedeemResponse(
                 memberId=str(member_id),

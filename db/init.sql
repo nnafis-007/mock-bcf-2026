@@ -3,7 +3,6 @@ BEGIN;
 -- Needed for gen_random_uuid()
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
-DROP TABLE IF EXISTS redeem_history;
 DROP TABLE IF EXISTS purchase_history;
 DROP TABLE IF EXISTS coffee;
 DROP TABLE IF EXISTS member;
@@ -25,7 +24,7 @@ CREATE TABLE coffee (
 
 -- 3. Purchase_history -> purchaseId(generated+PK), memberId(FK), coffeeId(FK), quantity, totalAmount, pointsEarned, totalPoints
 CREATE TABLE purchase_history (
-    "purchaseId" BIGSERIAL PRIMARY KEY DEFAULT gen_random_uuid(),
+    "purchaseId" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     "memberId" BIGINT NOT NULL REFERENCES member("memberId"),
     "coffeeId" UUID NOT NULL REFERENCES coffee("coffeeId"),
     quantity INTEGER NOT NULL CHECK (quantity > 0),
@@ -33,20 +32,5 @@ CREATE TABLE purchase_history (
     "pointsEarned" INTEGER NOT NULL,
     "totalPoints" INTEGER NOT NULL
 );
-
--- 4. Redeem_history -> redeem_id(PK + UUID), member_id(FK), coffee_id(FK), points_redeemed, redeemed_at(generated)
-CREATE TABLE redeem_history (
-    redeem_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    member_id BIGINT NOT NULL REFERENCES member("memberId"),
-    coffee_id UUID NOT NULL REFERENCES coffee("coffeeId"),
-    points_redeemed INTEGER NOT NULL CHECK (points_redeemed >= 0),
-    redeemed_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-
--- Sentinel coffee row used for point redemptions (API doesn't provide coffeeId).
--- Keeps schema shape intact while satisfying redeem_history.coffee_id NOT NULL.
--- INSERT INTO coffee ("coffeeId", name, price)
--- VALUES ('00000000-0000-0000-0000-000000000000', '__REDEMPTION__', 1)
--- ON CONFLICT (name) DO NOTHING;
 
 COMMIT;

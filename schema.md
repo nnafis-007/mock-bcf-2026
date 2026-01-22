@@ -21,20 +21,10 @@
 
 **Columns**
 
-- `purchaseId` (PK): generated integer ID
+- `purchaseId` (PK): generated UUID
 - `memberId` (FK → member.memberId)
 - `coffeeId` (FK → coffee.coffeeId)
 - `quantity`: integer
 - `totalAmount`: numeric
 - `pointsEarned`: integer
 - `totalPoints`: integer
-
-## 4. Redeem_history
-
-**Columns**
-
-- `redeem_id` (PK + UUID): generated UUID
-- `member_id` (FK → member.memberId)
-- `coffee_id` (FK → coffee.coffeeId)
-- `points_redeemed`: integer
-- `redeemed_at` (generated): timestamp
