@@ -1,6 +1,8 @@
 name: API Tests with Docker
 
 on:
+  push:
+    branches: [ "main", "master" ]
   pull_request:
     branches: [ "main", "master" ]
 
@@ -17,7 +19,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      # Install backend requirements (optional but safe)
+      # Install backend requirements (optional but future-proof)
       - name: Install backend dependencies
         run: |
           pip install -r backend/requirements.txt
@@ -51,5 +53,3 @@ jobs:
       - name: Stop Docker Compose
         if: always()
         run: docker compose down
-
-        ##trying to run ci
