@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: pgdb
+    restart: always
+    environment: # github secrets theke jaabe
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: testdb # otherwise empty db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build: ./backend
+    container_name: fastapi-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment: # github secrets theke jaabe
+      DB_HOST: postgres
+      DB_NAME: testdb
+      DB_USER: admin
+      DB_PASSWORD: admin123
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata:
