@@ -61,6 +61,7 @@ def test_create_coffee():
 def test_create_member():
     payload = random_member_payload()
     response = create_member(payload)
+    print(response.text)
     assert response.status_code == 200
     data = response.json()
     assert data["memberId"] == payload["memberId"]
@@ -84,6 +85,7 @@ def test_purchase_coffee():
     }
 
     response = purchase_coffee(payload)
+    print(response.text)
     assert response.status_code == 200
     data = response.json()
     assert data["memberId"] == member["memberId"]
@@ -111,14 +113,17 @@ def test_redeem_points():
         "coffeeId": coffee["id"],
         "quantity": 5
     }
-    purchase_coffee(purchase_payload)
+    coffee_resp = purchase_coffee(purchase_payload).json()
+    total_points = coffee_resp["totalPoints"]
+    
 
     redeem_payload = {
-        "pointsToUse": 50,
-        "price": coffee["price"] * 5
+        "pointsToUse": total_points - 1,
+        "price": coffee["price"] + total_points + 1
     }
 
     response = redeem_points(member["memberId"], redeem_payload)
+    print(response.text)
     assert response.status_code == 200
     data = response.json()
     assert data["memberId"] == member["memberId"]
