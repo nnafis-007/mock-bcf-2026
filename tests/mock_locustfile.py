@@ -24,10 +24,12 @@ def random_member_payload():
     }
 
 def create_coffee(client, payload):
-    return client.post("/coffees", json=payload, catch_response=True)
+    response = client.post("/coffees", json=payload)
+    return response
 
 def create_member(client, payload):
-    return client.post("/members", json=payload, catch_response=True)
+    response = client.post("/members", json=payload)
+    return response
 
 def purchase_coffee(client, payload):
     return client.post("/purchase", json=payload, catch_response=True)
@@ -51,8 +53,22 @@ class NormalUser(HttpUser):
     def buy_coffee(self):
         """Typical purchase flow"""
         # Create member and coffee
-        member = create_member(self.client, random_member_payload()).json()
-        coffee = create_coffee(self.client, random_coffee_payload()).json()
+        member_response = create_member(self.client, random_member_payload())
+        if member_response.status_code != 200:
+            logger.error(f"Failed to create member: {member_response.status_code}")
+            return
+        
+        coffee_response = create_coffee(self.client, random_coffee_payload())
+        if coffee_response.status_code != 200:
+            logger.error(f"Failed to create coffee: {coffee_response.status_code}")
+            return
+        
+        try:
+            member = member_response.json()
+            coffee = coffee_response.json()
+        except Exception as e:
+            logger.error(f"Failed to parse JSON: {e}")
+            return
 
         # Make purchase
         quantity = random.randint(1, 5)
@@ -63,21 +79,38 @@ class NormalUser(HttpUser):
         }
         with purchase_coffee(self.client, payload) as response:
             if response.status_code == 200:
-                data = response.json()
-                # Validate points calculation
-                expected_points = (coffee["price"] * quantity) // 50
-                if data["pointsEarned"] != expected_points:
-                    response.failure(f"Points mismatch: expected {expected_points}, got {data['pointsEarned']}")
-                else:
-                    response.success()
+                try:
+                    data = response.json()
+                    # Validate points calculation
+                    expected_points = (coffee["price"] * quantity) // 50
+                    if data["pointsEarned"] != expected_points:
+                        response.failure(f"Points mismatch: expected {expected_points}, got {data['pointsEarned']}")
+                    else:
+                        response.success()
+                except Exception as e:
+                    response.failure(f"Failed to parse response: {e}")
             else:
                 response.failure(f"Purchase failed: {response.status_code}")
 
     @task(2)
     def redeem_member_points(self):
         """Redeem some points after purchase"""
-        member = create_member(self.client, random_member_payload()).json()
-        coffee = create_coffee(self.client, random_coffee_payload()).json()
+        member_response = create_member(self.client, random_member_payload())
+        if member_response.status_code != 200:
+            logger.error(f"Failed to create member: {member_response.status_code}")
+            return
+        
+        coffee_response = create_coffee(self.client, random_coffee_payload())
+        if coffee_response.status_code != 200:
+            logger.error(f"Failed to create coffee: {coffee_response.status_code}")
+            return
+        
+        try:
+            member = member_response.json()
+            coffee = coffee_response.json()
+        except Exception as e:
+            logger.error(f"Failed to parse JSON: {e}")
+            return
 
         # Simulate purchase to earn points
         quantity = 5
@@ -129,16 +162,26 @@ class EdgeCaseUser(HttpUser):
     @task(3)
     def redeem_too_many_points(self):
         """Try to redeem more points than available"""
-        member = create_member(self.client, random_member_payload()).json()
+        member_response = create_member(self.client, random_member_payload())
+        if member_response.status_code != 200:
+            logger.error(f"Failed to create member: {member_response.status_code}")
+            return
+        
+        try:
+            member = member_response.json()
+        except Exception as e:
+            logger.error(f"Failed to parse JSON: {e}")
+            return
+        
         payload = {
             "pointsToUse": 1000,  # intentionally high
             "price": 500
         }
-        response = redeem_points(self.client, member["memberId"], payload)
-        if response.status_code == 400:
-            response.success()
-        else:
-            response.failure(f"Expected 400 for excessive points, got {response.status_code}")
+        with redeem_points(self.client, member["memberId"], payload) as response:
+            if response.status_code == 400:
+                response.success()
+            else:
+                response.failure(f"Expected 400 for excessive points, got {response.status_code}")
 
 # ----------------------
 # Stress Test Users
@@ -155,8 +198,22 @@ class StressTestUser(HttpUser):
     @task(10)
     def rapid_purchases(self):
         """Rapidly create purchases to stress the system"""
-        member = create_member(self.client, random_member_payload()).json()
-        coffee = create_coffee(self.client, random_coffee_payload()).json()
+        member_response = create_member(self.client, random_member_payload())
+        if member_response.status_code != 200:
+            logger.error(f"Failed to create member: {member_response.status_code}")
+            return
+        
+        coffee_response = create_coffee(self.client, random_coffee_payload())
+        if coffee_response.status_code != 200:
+            logger.error(f"Failed to create coffee: {coffee_response.status_code}")
+            return
+        
+        try:
+            member = member_response.json()
+            coffee = coffee_response.json()
+        except Exception as e:
+            logger.error(f"Failed to parse JSON: {e}")
+            return
 
         quantity = random.randint(1, 3)
         payload = {
@@ -164,17 +221,31 @@ class StressTestUser(HttpUser):
             "coffeeId": coffee["id"],
             "quantity": quantity
         }
-        response = purchase_coffee(self.client, payload)
-        if response.status_code == 200:
-            response.success()
-        else:
-            response.failure(f"Rapid purchase failed: {response.status_code}")
+        with purchase_coffee(self.client, payload) as response:
+            if response.status_code == 200:
+                response.success()
+            else:
+                response.failure(f"Rapid purchase failed: {response.status_code}")
 
     @task(5)
     def repeated_redeem(self):
         """Rapidly redeem points to test concurrency"""
-        member = create_member(self.client, random_member_payload()).json()
-        coffee = create_coffee(self.client, random_coffee_payload()).json()
+        member_response = create_member(self.client, random_member_payload())
+        if member_response.status_code != 200:
+            logger.error(f"Failed to create member: {member_response.status_code}")
+            return
+        
+        coffee_response = create_coffee(self.client, random_coffee_payload())
+        if coffee_response.status_code != 200:
+            logger.error(f"Failed to create coffee: {coffee_response.status_code}")
+            return
+        
+        try:
+            member = member_response.json()
+            coffee = coffee_response.json()
+        except Exception as e:
+            logger.error(f"Failed to parse JSON: {e}")
+            return
 
         purchase_payload = {
             "memberId": member["memberId"],
@@ -187,8 +258,8 @@ class StressTestUser(HttpUser):
             "pointsToUse": 5,
             "price": coffee["price"] * 5
         }
-        response = redeem_points(self.client, member["memberId"], redeem_payload)
-        if response.status_code == 200:
-            response.success()
-        else:
-            response.failure(f"Rapid redeem failed: {response.status_code}")
+        with redeem_points(self.client, member["memberId"], redeem_payload) as response:
+            if response.status_code == 200:
+                response.success()
+            else:
+                response.failure(f"Rapid redeem failed: {response.status_code}")
