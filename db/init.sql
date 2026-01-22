@@ -9,7 +9,7 @@ DROP TABLE IF EXISTS member;
 
 -- 1. member -> memberId(PK), name, phone, points(num)
 CREATE TABLE member (
-    "memberId" BIGSERIAL PRIMARY KEY,
+    "memberId" TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     phone TEXT UNIQUE,
     points INTEGER NOT NULL DEFAULT 0
@@ -25,7 +25,7 @@ CREATE TABLE coffee (
 -- 3. Purchase_history -> purchaseId(generated+PK), memberId(FK), coffeeId(FK), quantity, totalAmount, pointsEarned, totalPoints
 CREATE TABLE purchase_history (
     "purchaseId" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    "memberId" BIGINT NOT NULL REFERENCES member("memberId"),
+    "memberId" TEXT NOT NULL REFERENCES member("memberId"),
     "coffeeId" UUID NOT NULL REFERENCES coffee("coffeeId"),
     quantity INTEGER NOT NULL CHECK (quantity > 0),
     "totalAmount" NUMERIC(10, 2) NOT NULL,

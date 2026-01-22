@@ -135,6 +135,10 @@ class RedeemResponse(BaseModel):
     remainingPoints: int
 
 
+@app.get("/")
+def default_route() -> dict[str, str]:
+    return {"message": "Coffee Shop Loyalty Program API"}
+
 @app.post("/coffees", response_model=CreateCoffeeResponse)
 def create_coffee(req: CreateCoffeeRequest) -> CreateCoffeeResponse:
     if req.price <= 0:
@@ -167,7 +171,7 @@ def create_coffee(req: CreateCoffeeRequest) -> CreateCoffeeResponse:
 
 @app.post("/members", response_model=RegisterMemberResponse)
 def register_member(req: RegisterMemberRequest) -> RegisterMemberResponse:
-    member_id = _parse_positive_int(req.memberId, "memberId")
+    member_id = req.memberId
     pool = _require_pool()
     conn = pool.getconn()
     try:
@@ -196,7 +200,7 @@ def register_member(req: RegisterMemberRequest) -> RegisterMemberResponse:
 
 @app.post("/purchase", response_model=PurchaseResponse)
 def purchase(req: PurchaseRequest) -> PurchaseResponse:
-    member_id = _parse_positive_int(req.memberId, "memberId")
+    member_id = req.memberId
     quantity = _parse_positive_int(req.quantity, "quantity")
     coffee_id = req.coffeeId
 
@@ -247,7 +251,7 @@ def purchase(req: PurchaseRequest) -> PurchaseResponse:
 
 @app.post("/members/{memberId}/redeem", response_model=RedeemResponse)
 def redeem(memberId: str, req: RedeemRequest) -> RedeemResponse:
-    member_id = _parse_positive_int(memberId, "memberId")
+    member_id = memberId
     points_to_use = _parse_non_negative_int(req.pointsToUse, "pointsToUse")
     price = _parse_positive_int(req.price, "price")
 
@@ -264,6 +268,7 @@ def redeem(memberId: str, req: RedeemRequest) -> RedeemResponse:
 
             current_points = int(member_row["points"])
             if points_to_use > current_points:
+                print("points_to_use:", points_to_use, "current_points:", current_points)
                 conn.rollback()
                 raise HTTPException(status_code=400, detail="pointsToUse must be <= available points")
 
