@@ -1,0 +1,53 @@
+name: API Tests with Docker
+
+on:
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Install backend requirements (optional but safe)
+      - name: Install backend dependencies
+        run: |
+          pip install -r backend/requirements.txt
+
+      # Install test dependencies
+      - name: Install test dependencies
+        run: |
+          pip install pytest requests
+
+      # Build & start Docker containers
+      - name: Start Docker Compose
+        run: |
+          docker compose up -d --build
+          echo "Waiting for backend to be ready..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8000 > /dev/null; then
+              echo "Backend is ready ✅"
+              break
+            fi
+            sleep 2
+          done
+
+      # Run tests
+      - name: Run API tests
+        env:
+          BASE_URL: "http://localhost:8000"
+        run: |
+          pytest tests/ -v
+
+      # Always stop containers
+      - name: Stop Docker Compose
+        if: always()
+        run: docker compose down
