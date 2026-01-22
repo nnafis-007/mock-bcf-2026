@@ -2,7 +2,7 @@ import pytest
 import requests
 import uuid
 
-BASE_URL = ""  # replace with actual endpoint
+BASE_URL = "http://localhost:8000"
 
 # ----------------------
 # Helper Functions
