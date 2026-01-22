@@ -51,3 +51,5 @@ jobs:
       - name: Stop Docker Compose
         if: always()
         run: docker compose down
+
+        ##trying to run ci
